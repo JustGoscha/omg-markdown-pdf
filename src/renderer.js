@@ -19,7 +19,7 @@ function highlight(code, lang) {
   return hljs.highlightAuto(code).value;
 }
 
-export function createRenderer({ anchorMap, rootAbs }) {
+export function createRenderer({ anchorMap }) {
   const md = new MarkdownIt({
     html: true,
     linkify: true,
