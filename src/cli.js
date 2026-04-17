@@ -6,9 +6,30 @@ import { convert } from "./index.js";
 
 const program = new Command();
 
+const EXAMPLES = `
+Examples:
+  md2pdf notes.md                       # writes notes.pdf next to the input
+  md2pdf README.md -o docs/readme.pdf   # custom output path
+  md2pdf docs/index.md --toc on         # force TOC even for a single file
+  md2pdf paper.md --footer auto         # page numbers in the footer
+  md2pdf spec.md --no-follow            # don't bundle linked *.md files
+  md2pdf book.md --theme dark           # dark syntax + markdown theme
+
+Linked-markdown bundling (on by default):
+  Any [text](./other.md) link under --root (default: input's dir) is included
+  as its own section, with the link rewritten to an internal PDF anchor.
+  Walks transitively; cycles are safe; external/mailto/non-.md links pass through.
+
+Supports: GFM tables, task lists, footnotes, emoji shortcodes, ~190 syntax-
+highlighted languages via highlight.js, Mermaid diagrams, KaTeX math ($…$ / $$…$$),
+and local images (PNG/JPG/SVG resolved relative to each source file).
+`;
+
 program
   .name("md2pdf")
   .description("Lightweight Markdown → A4 PDF with mermaid, math, and linked-md bundling")
+  .addHelpText("after", EXAMPLES)
+  .showHelpAfterError("(run 'md2pdf --help' for full usage)")
   .argument("<input>", "input markdown file")
   .option("-o, --output <file>", "output PDF path (default: alongside input)")
   .option("--format <format>", "page format: A4 | Letter", "A4")
@@ -59,6 +80,12 @@ program
       console.error(`✓ wrote ${outPath} (${kb} KB) in ${Date.now() - t0}ms`);
     }
   });
+
+// No args → show full help instead of commander's terse error
+if (process.argv.length <= 2) {
+  program.outputHelp();
+  process.exit(0);
+}
 
 program.parseAsync().catch((err) => {
   console.error(`✗ ${err.message}`);
