@@ -1,10 +1,44 @@
 #!/usr/bin/env bun
 import { writeFileSync, mkdirSync } from "node:fs";
+import { spawn } from "node:child_process";
+import { platform } from "node:os";
 import { dirname, resolve, basename, extname } from "node:path";
 import { Command } from "commander";
 import { convert } from "./index.js";
 import { scanMarkdownFiles } from "./scanner.js";
 import { pickOne } from "./picker.js";
+import { findChrome } from "./browser.js";
+
+function spawnDetached(cmd, args, label) {
+  try {
+    const child = spawn(cmd, args, { stdio: "ignore", detached: true });
+    child.on("error", (err) => console.error(`! couldn't ${label}: ${err.message}`));
+    child.unref();
+  } catch (err) {
+    console.error(`! couldn't ${label}: ${err.message}`);
+  }
+}
+
+function openInViewer(path) {
+  const p = platform();
+  if (p === "darwin") return spawnDetached("open", [path], "open viewer");
+  if (p === "win32") return spawnDetached("cmd", ["/c", "start", "", path], "open viewer");
+  return spawnDetached("xdg-open", [path], "open viewer");
+}
+
+function openInBrowser(path) {
+  try {
+    const chrome = findChrome();
+    spawnDetached(chrome, [path], "open browser");
+  } catch {
+    // No Chrome/Chromium — try OS default for file:// URLs as a fallback
+    const url = `file://${path}`;
+    const p = platform();
+    if (p === "darwin") return spawnDetached("open", [url], "open browser");
+    if (p === "win32") return spawnDetached("cmd", ["/c", "start", "", url], "open browser");
+    return spawnDetached("xdg-open", [url], "open browser");
+  }
+}
 
 const program = new Command();
 
@@ -16,6 +50,8 @@ Examples:
   md2pdf paper.md --footer auto         # page numbers in the footer
   md2pdf spec.md --no-follow            # don't bundle linked *.md files
   md2pdf book.md --theme dark           # dark syntax + markdown theme
+  md2pdf notes.md --open browser        # open result in Chrome/Chromium instead
+  md2pdf notes.md --open off            # build PDF without opening it
 
 Linked-markdown bundling (on by default):
   Any [text](./other.md) link under --root (default: input's dir) is included
@@ -45,6 +81,11 @@ program
   .option("--no-follow", "do not follow links to other *.md files")
   .option("--root <dir>", "base dir allowed for link following (default: input's dir)")
   .option("--max-depth <n>", "cap link recursion depth", (v) => parseInt(v, 10))
+  .option(
+    "--open <where>",
+    "open after write: viewer | browser | off",
+    process.stdout.isTTY ? "viewer" : "off",
+  )
   .option("-q, --quiet", "suppress info logs")
   .action(async (input, opts) => {
     const inputAbs = resolve(input);
@@ -80,6 +121,15 @@ program
     if (!opts.quiet) {
       const kb = (pdf.length / 1024).toFixed(1);
       console.error(`✓ wrote ${outPath} (${kb} KB) in ${Date.now() - t0}ms`);
+    }
+
+    const openWhere = String(opts.open || "off").toLowerCase();
+    if (openWhere === "browser") {
+      if (!opts.quiet) console.error(`↗ opening in browser`);
+      openInBrowser(outPath);
+    } else if (openWhere === "viewer" || openWhere === "on") {
+      if (!opts.quiet) console.error(`↗ opening in default viewer`);
+      openInViewer(outPath);
     }
   });
 

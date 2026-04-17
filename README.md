@@ -36,6 +36,7 @@ Options:
 | `--no-follow` | — | don't follow `[text](foo.md)` links |
 | `--root <dir>` | input's dir | only follow links inside this dir |
 | `--max-depth <n>` | ∞ | cap link recursion depth |
+| `--open <where>` | `viewer` (TTY) / `off` (non-TTY) | open after write: `viewer` (Preview / xdg-open / Explorer), `browser` (reuses the detected Chrome), or `off` |
 | `-q, --quiet` | — | suppress info logs |
 
 ### Linked-markdown bundling
