@@ -1,0 +1,33 @@
+{
+  "name": "omg-markdown-pdf",
+  "version": "0.1.0",
+  "description": "Lightweight Markdown → A4 PDF converter with mermaid, math, and linked-markdown bundling.",
+  "type": "module",
+  "bin": {
+    "md2pdf": "./src/cli.js"
+  },
+  "main": "./src/index.js",
+  "exports": {
+    ".": "./src/index.js"
+  },
+  "scripts": {
+    "start": "bun src/cli.js",
+    "example": "bun src/cli.js examples/sample.md -o examples/sample.pdf"
+  },
+  "engines": {
+    "bun": ">=1.1.0",
+    "node": ">=20"
+  },
+  "dependencies": {
+    "commander": "^12.1.0",
+    "highlight.js": "^11.10.0",
+    "katex": "^0.16.11",
+    "markdown-it": "^14.1.0",
+    "markdown-it-anchor": "^9.2.0",
+    "markdown-it-emoji": "^3.0.0",
+    "markdown-it-footnote": "^4.0.0",
+    "markdown-it-task-lists": "^2.1.1",
+    "mermaid": "^11.4.0",
+    "puppeteer-core": "^23.8.0"
+  }
+}
