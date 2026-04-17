@@ -73,7 +73,8 @@ export function collect(entryPath, { root, maxDepth = Infinity, follow = true, q
     const relPath = relative(displayRootAbs, abs) || "index.md";
     const anchorId = dedupeAnchor(slugifyPath(relPath), anchorMap);
     anchorMap.set(abs, anchorId);
-    docs.push({ absPath: abs, relPath, anchorId, content, dir: dirname(abs) });
+    const title = firstHeading(content) || relPath;
+    docs.push({ absPath: abs, relPath, anchorId, title, content, dir: dirname(abs) });
 
     if (!follow || depth >= maxDepth) continue;
 
@@ -102,6 +103,38 @@ export function collect(entryPath, { root, maxDepth = Infinity, follow = true, q
   }
 
   return { docs, anchorMap, rootAbs: displayRootAbs, entryAbs };
+}
+
+/**
+ * Pull the first ATX-style H1 from markdown content, stripped of inline
+ * markdown noise (emphasis markers, inline code, trailing {#id} anchors).
+ * Skips headings inside fenced code blocks. Returns null if none found.
+ */
+function firstHeading(content) {
+  const lines = content.split(/\r?\n/);
+  let inFence = false;
+  for (const line of lines) {
+    if (/^\s*(```|~~~)/.test(line)) {
+      inFence = !inFence;
+      continue;
+    }
+    if (inFence) continue;
+    const m = line.match(/^#\s+(.+?)\s*#*\s*$/);
+    if (m) return cleanHeading(m[1]);
+  }
+  return null;
+}
+
+function cleanHeading(s) {
+  return s
+    .replace(/\{#[^}]+\}\s*$/, "")       // drop {#anchor} suffix
+    .replace(/`([^`]+)`/g, "$1")         // inline code → plain
+    .replace(/\*\*([^*]+)\*\*/g, "$1")   // **bold** → bold
+    .replace(/__([^_]+)__/g, "$1")       // __bold__ → bold
+    .replace(/(^|[^*])\*([^*]+)\*/g, "$1$2") // *em* → em
+    .replace(/(^|[^_])_([^_]+)_/g, "$1$2")   // _em_ → em
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1") // [text](url) → text
+    .trim();
 }
 
 function dedupeAnchor(base, anchorMap) {

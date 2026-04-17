@@ -88,9 +88,16 @@ function buildBody(docs, renderer, { showToc }) {
   const parts = [];
 
   if (showToc && docs.length) {
+    const titleCounts = new Map();
+    for (const d of docs) {
+      const t = d.title || d.relPath;
+      titleCounts.set(t, (titleCounts.get(t) || 0) + 1);
+    }
     parts.push('<nav class="md2pdf-toc"><h2>Contents</h2><ol>');
     for (const d of docs) {
-      parts.push(`<li><a href="#${d.anchorId}">${escapeHtml(d.relPath)}</a></li>`);
+      const t = d.title || d.relPath;
+      const label = titleCounts.get(t) > 1 ? `${t} (${d.relPath})` : t;
+      parts.push(`<li><a href="#${d.anchorId}">${escapeHtml(label)}</a></li>`);
     }
     parts.push("</ol></nav>");
   }
