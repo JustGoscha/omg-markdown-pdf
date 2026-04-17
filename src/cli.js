@@ -3,6 +3,8 @@ import { writeFileSync, mkdirSync } from "node:fs";
 import { dirname, resolve, basename, extname } from "node:path";
 import { Command } from "commander";
 import { convert } from "./index.js";
+import { scanMarkdownFiles } from "./scanner.js";
+import { pickOne } from "./picker.js";
 
 const program = new Command();
 
@@ -81,10 +83,28 @@ program
     }
   });
 
-// No args → show full help instead of commander's terse error
+// No args → scan cwd (3 levels deep) and show an interactive picker.
+// Falls back to help if nothing found or stdin isn't a TTY.
 if (process.argv.length <= 2) {
-  program.outputHelp();
-  process.exit(0);
+  const cwd = process.cwd();
+  const files = scanMarkdownFiles(cwd, { maxDepth: 3 });
+
+  if (!files.length || !process.stdin.isTTY) {
+    if (!files.length && process.stdin.isTTY) {
+      console.error("No .md files found within 3 levels of", cwd);
+      console.error("");
+    }
+    program.outputHelp();
+    process.exit(0);
+  }
+
+  console.error(`Found ${files.length} markdown file${files.length === 1 ? "" : "s"} under ${cwd}`);
+  const picked = await pickOne(files, { prompt: "Convert which file?" });
+  if (!picked) {
+    console.error("Cancelled.");
+    process.exit(130);
+  }
+  process.argv.push(picked);
 }
 
 program.parseAsync().catch((err) => {
