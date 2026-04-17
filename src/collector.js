@@ -40,12 +40,17 @@ function withinRoot(absPath, rootAbs) {
  *   { docs: [{ absPath, relPath, anchorId, content, dir }], anchorMap: Map<absPath, anchorId> }
  * anchorMap also includes real-path entries so renderer lookups cover symlinks.
  */
-export function collect(entryPath, { root, maxDepth = Infinity, follow = true } = {}) {
+export function collect(entryPath, { root, maxDepth = Infinity, follow = true, quiet = false } = {}) {
   const entryAbs = safeRealpath(resolve(entryPath));
   if (!entryAbs) throw new Error(`Entry file not found: ${entryPath}`);
 
-  const rootAbs = safeRealpath(resolve(root || dirname(entryAbs)));
-  if (!rootAbs) throw new Error(`Root directory not found: ${root}`);
+  // --root only restricts link-following when explicitly set.
+  // By default, links are followed wherever they point, relative to the linking file.
+  // The "display root" is the entry file's dir — used only for generating readable
+  // relative paths in the TOC and section headers.
+  const scopeAbs = root ? safeRealpath(resolve(root)) : null;
+  if (root && !scopeAbs) throw new Error(`Root directory not found: ${root}`);
+  const displayRootAbs = scopeAbs || dirname(entryAbs);
 
   const docs = [];
   const seen = new Set();
@@ -65,7 +70,7 @@ export function collect(entryPath, { root, maxDepth = Infinity, follow = true } 
       continue;
     }
 
-    const relPath = relative(rootAbs, abs) || "index.md";
+    const relPath = relative(displayRootAbs, abs) || "index.md";
     const anchorId = dedupeAnchor(slugifyPath(relPath), anchorMap);
     anchorMap.set(abs, anchorId);
     docs.push({ absPath: abs, relPath, anchorId, content, dir: dirname(abs) });
@@ -80,15 +85,23 @@ export function collect(entryPath, { root, maxDepth = Infinity, follow = true } 
       if (!p || !/\.md$/i.test(p)) continue;
 
       const target = safeRealpath(resolve(dirname(abs), p));
-      if (!target) continue;
-      if (!withinRoot(target, rootAbs)) continue;
+      if (!target) {
+        if (!quiet) console.error(`  ! link target not found: ${p} (from ${relPath})`);
+        continue;
+      }
+      if (scopeAbs && !withinRoot(target, scopeAbs)) {
+        if (!quiet) {
+          console.error(`  ! out-of-root (--root=${scopeAbs}): ${p} (from ${relPath})`);
+        }
+        continue;
+      }
       if (seen.has(target)) continue;
 
       queue.push({ abs: target, depth: depth + 1 });
     }
   }
 
-  return { docs, anchorMap, rootAbs, entryAbs };
+  return { docs, anchorMap, rootAbs: displayRootAbs, entryAbs };
 }
 
 function dedupeAnchor(base, anchorMap) {

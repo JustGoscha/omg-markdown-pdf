@@ -79,7 +79,7 @@ program
   .option("--no-math", "disable KaTeX math rendering")
   .option("--toc <mode>", "TOC mode: auto | on | off", "auto")
   .option("--no-follow", "do not follow links to other *.md files")
-  .option("--root <dir>", "base dir allowed for link following (default: input's dir)")
+  .option("--root <dir>", "restrict link following to files under this dir (default: unrestricted)")
   .option("--max-depth <n>", "cap link recursion depth", (v) => parseInt(v, 10))
   .option(
     "--open <where>",
@@ -113,6 +113,7 @@ program
       follow: opts.follow !== false,
       root: opts.root,
       maxDepth: Number.isFinite(opts.maxDepth) ? opts.maxDepth : Infinity,
+      quiet: opts.quiet,
     });
 
     mkdirSync(dirname(outPath), { recursive: true });

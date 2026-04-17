@@ -38,9 +38,10 @@ export async function convert(entryPath, options = {}) {
     enableMermaid = true,
     enableMath = true,
     title,
+    quiet = false,
   } = options;
 
-  const { docs, anchorMap } = collect(entryPath, { root, follow, maxDepth });
+  const { docs, anchorMap } = collect(entryPath, { root, follow, maxDepth, quiet });
   const renderer = createRenderer({ anchorMap });
 
   const showToc = toc ?? docs.length > 1;

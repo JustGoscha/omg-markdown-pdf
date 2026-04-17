@@ -34,7 +34,7 @@ Options:
 | `--no-mermaid` | — | skip mermaid rendering |
 | `--no-math` | — | skip KaTeX math |
 | `--no-follow` | — | don't follow `[text](foo.md)` links |
-| `--root <dir>` | input's dir | only follow links inside this dir |
+| `--root <dir>` | unrestricted | opt-in scope: only follow links inside this dir |
 | `--max-depth <n>` | ∞ | cap link recursion depth |
 | `--open <where>` | `viewer` (TTY) / `off` (non-TTY) | open after write: `viewer` (Preview / xdg-open / Explorer), `browser` (reuses the detected Chrome), or `off` |
 | `-q, --quiet` | — | suppress info logs |
@@ -47,7 +47,7 @@ Given `sample.md` containing `[details](./linked.md)` and `linked.md` containing
 2. Each file as its own section with a page break
 3. Every `.md` link rewritten to an internal anchor (they click through inside the PDF)
 
-Only files beneath `--root` are followed.  External URLs, `mailto:`, and non-`.md` links pass through untouched.  Cycles are safe — each file is included at most once.
+Links are resolved relative to the linking file and followed wherever they point — `../sibling/other.md`, `./same-dir.md`, or absolute paths all work without restriction.  Pass `--root <dir>` to scope the walk to a subtree if you want to prevent crossing out of it.  External URLs, `mailto:`, and non-`.md` links pass through untouched.  Cycles are safe — each file is included at most once.
 
 ## Library
 
