@@ -18,8 +18,7 @@ program
   .option("--footer <html>", 'HTML footer template; "auto" adds page numbers')
   .option("--no-mermaid", "disable mermaid rendering")
   .option("--no-math", "disable KaTeX math rendering")
-  .option("--no-toc", "disable auto-generated TOC when bundling")
-  .option("--toc", "force TOC on")
+  .option("--toc <mode>", "TOC mode: auto | on | off", "auto")
   .option("--no-follow", "do not follow links to other *.md files")
   .option("--root <dir>", "base dir allowed for link following (default: input's dir)")
   .option("--max-depth <n>", "cap link recursion depth", (v) => parseInt(v, 10))
@@ -34,9 +33,8 @@ program
     if (!opts.quiet) console.error(`→ ${input} → ${outPath}`);
     const t0 = Date.now();
 
-    // commander: --no-X  → opts.x === false;  --toc  → opts.toc === true
-    // When both are given, explicit wins.  If neither, leave undefined (auto).
-    const tocFlag = opts.toc === false ? false : opts.toc === true ? true : undefined;
+    const tocFlag =
+      opts.toc === "on" ? true : opts.toc === "off" ? false : undefined;
 
     const pdf = await convert(inputAbs, {
       output: outPath,
