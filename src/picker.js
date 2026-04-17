@@ -10,7 +10,7 @@ import { emitKeypressEvents } from "node:readline";
  *
  * Windowed for long lists — shows up to `pageSize` items at a time.
  */
-export async function pickOne(items, { prompt = "Select:", pageSize = 6 } = {}) {
+export async function pickOne(items, { prompt = "Select:", pageSize = 15 } = {}) {
   if (!items.length) return null;
   if (!process.stdin.isTTY || !process.stdout.isTTY) {
     // Non-interactive: can't show a menu — bail.
@@ -54,15 +54,9 @@ export async function pickOne(items, { prompt = "Select:", pageSize = 6 } = {}) 
       lines.push(` ${marker} ${item}\x1b[K`);
     }
 
-    const hiddenAbove = start;
-    const hiddenBelow = list.length - end;
-    if (hiddenAbove || hiddenBelow) {
-      const up = hiddenAbove ? `\x1b[2m↑ ${hiddenAbove} more\x1b[0m` : "";
-      const down = hiddenBelow ? `\x1b[2m↓ ${hiddenBelow} more\x1b[0m` : "";
-      const sep = hiddenAbove && hiddenBelow ? "   " : "";
-      lines.push(`   ${up}${sep}${down}\x1b[K`);
+    if (list.length > pageSize) {
+      lines.push(`\x1b[2m   … ${list.length - pageSize} more, type to filter\x1b[0m\x1b[K`);
     }
-
     lines.push(
       `\x1b[2m  ↑/↓ move · type to filter · Enter select · Esc cancel\x1b[0m\x1b[K`,
     );
